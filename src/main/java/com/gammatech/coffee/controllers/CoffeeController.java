@@ -1,82 +1,93 @@
 package com.gammatech.coffee.controllers;
-
 import java.util.ArrayList;
 import java.util.List;
-
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.gammatech.coffee.exceptions.ResourceAlreadyExistsException;
+import com.gammatech.coffee.exceptions.ResourceNotFoundException;
 import com.gammatech.coffee.models.Coffee;
+import com.gammatech.coffee.service.CoffeeService;
+
 
 @RestController
 @RequestMapping("/api/coffees")
 @CrossOrigin(origins = "*")
 public class CoffeeController {
 
-    private List<Coffee> coffees = new ArrayList<>();
+   private final CoffeeService coffeeService;
 
-
-    @GetMapping // select * from coffees
+   public CoffeeController(CoffeeService coffeeService) {
+    this.coffeeService = coffeeService;
+   }
+    @GetMapping
     public ResponseEntity<?> getAllCoffees() {
-        try {
-            return ResponseEntity.ok(coffees);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+        List<Coffee> coffees = coffeeService.getAllCoffees();
+        if (coffees.isEmpty()) {
+            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.ok(coffees);
     }
 
-    // select * from coffees where id = ?
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getCoffeeById(@PathVariable Long id) {
-        System.out.println("id: " + id);
-        for (Coffee coffee : coffees) {
-            if (coffee.getId().equals(id)) {
-                System.out.println("cafe encontrado");
-                return ResponseEntity.ok(coffee);
-            }
-        }
-        return ResponseEntity.notFound().build();
-    }
-
-    // insert into coffees (name, price, imageUrl) values (?, ?, ?)
-    @PostMapping
-    public ResponseEntity<?> createCoffee(@RequestBody Coffee coffee) {
         try {
-            coffees.add(coffee);
-            return ResponseEntity.status(HttpStatus.CREATED).body(coffee);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            Coffee coffee = coffeeService.getByIdCoffee(id);
+            return ResponseEntity.ok(coffee);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 
-    // update coffees set name = ?, price = ?, imageUrl = ? where id = ?
+    @PostMapping
+    public ResponseEntity<?> addCoffee(@RequestBody Coffee coffeeRequest) {
+        try {
+            Coffee savedCoffee = coffeeService.createCoffee(coffeeRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedCoffee);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+        catch (ResourceAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCoffee(@PathVariable Long id, @RequestBody Coffee coffeeRequest) {
-        for (Coffee coffee : coffees) {
-            if (coffee.getId().equals(id)) {
-                coffee.setNombre(coffeeRequest.getNombre());
-                coffee.setPrecio(coffeeRequest.getPrecio());
-                coffee.setImageUrl(coffeeRequest.getImageUrl());
-                return ResponseEntity.ok(coffee); // 200 OK con el café actualizado
-            }
+        try {
+            Coffee updatedCoffee = coffeeService.updateCoffee(id, coffeeRequest);
+            return ResponseEntity.ok(updatedCoffee);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (ResourceAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
-        return ResponseEntity.notFound().build(); // 404 Not Found si no existe el café
     }
 
+    // Actualizar solamente el campo de imageUrl
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> updateCoffeePatch(@PathVariable Long id, @RequestParam String imageUrl) {
+        try {
+            Coffee updatedCoffee = coffeeService.updateCoffeeImageUrl(id, imageUrl);
+            return ResponseEntity.ok(updatedCoffee);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } 
+    }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<?> deleteCoffee(@PathVariable Long id) {
-        for (Coffee coffee : coffees) {
-            if (coffee.getId().equals(id)) {
-                coffees.remove(coffee);
-                return ResponseEntity.noContent().build();
-            }
+        try {
+            Coffee deletedCoffee = coffeeService.deleteCoffee(id);
+            return ResponseEntity.status(HttpStatus.OK).body(deletedCoffee);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
-        return ResponseEntity.notFound().build();
     }
-    
-    
 }
