@@ -19,7 +19,6 @@ public class Customer {
 
     @Column(unique = true)
     private String email;
-
     private String phone;
 
     public Customer(Long id, String name, String email, String phone) {
