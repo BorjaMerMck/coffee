@@ -15,11 +15,15 @@ public class Coffee {
     @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
 
-    @Column(unique = true)
+    @Column(unique = true , nullable = false)
     private String name;
     
     private Double price;
     private String imageUrl;
+
+    //constructor vacio
+    public Coffee() {
+    }
 
     public Coffee(Long id, String name, Double price, String imageUrl) {
         this.id = id;

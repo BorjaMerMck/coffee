@@ -6,6 +6,9 @@ import com.gammatech.coffee.exceptions.ResourceNotFoundException;
 import com.gammatech.coffee.models.Coffee;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,7 +25,13 @@ public class CoffeeService {
         return coffeeRepository.findAll();
     }
 
-    public Coffee getByIdCoffee(Long coffeeId) {
+    // select * from coffee limit 10 offset 10
+    public Page<Coffee> getAllPageable(int page, int pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return  coffeeRepository.findAll(pageable);
+    }
+
+    public Coffee getCoffeeById(Long coffeeId) {
         return coffeeRepository.findById(coffeeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cafe  con el id '" + coffeeId + "' no encontrado"));
 
@@ -47,9 +56,10 @@ public class CoffeeService {
             coffeeRepository.existsByName(coffeeRequest.getName())) {
             throw new ResourceAlreadyExistsException("Ya existe un café con el nombre: " + coffeeRequest.getName());
         }
-
-        coffeeRequest.setId(coffeeId); // Asegurar que la ID sea la correcta
-        return coffeeRepository.save(coffeeRequest);
+        existingCoffee.setName(coffeeRequest.getName());
+        existingCoffee.setPrice(coffeeRequest.getPrice());
+        existingCoffee.setImageUrl(coffeeRequest.getImageUrl());
+        return coffeeRepository.save(existingCoffee);
     }
 
     public Coffee updateCoffeeImageUrl(Long coffeeId, String imageUrl) {
@@ -72,6 +82,8 @@ public class CoffeeService {
         coffeeRepository.delete(deleteCoffee);
     }
 
+
+    
     // METODOS
     private void validateData(Coffee coffee) {
         if (coffee.getName() == null || coffee.getName().trim().isEmpty() ||

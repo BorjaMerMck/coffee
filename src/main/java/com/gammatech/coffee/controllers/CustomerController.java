@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.data.domain.Page;
 
 import com.gammatech.coffee.exceptions.ResourceAlreadyExistsException;
 import com.gammatech.coffee.exceptions.ResourceNotFoundException;
 import com.gammatech.coffee.models.Customer;
+import com.gammatech.coffee.responses.CustomerPageResponse;
 import com.gammatech.coffee.service.CustomerService;
 
 @RestController
@@ -30,13 +32,26 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public ResponseEntity<?> getAllCustomers() {
         List<Customer> customers = customerService.getAllCustomers();
         if (customers.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(customers);
+    }
+
+    @GetMapping()
+    public ResponseEntity<?> getCustomers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "2") int size) {
+        Page<Customer> customersPage = customerService.getAllPageable(page, size);
+        CustomerPageResponse customerPageResponse = new CustomerPageResponse(
+                customersPage.getContent(),
+                (int) customersPage.getTotalElements(),
+                customersPage.getTotalPages(),
+                customersPage.getNumber());
+        return ResponseEntity.status(HttpStatus.OK).body(customerPageResponse);
     }
 
     @GetMapping("/{id}")
@@ -92,8 +107,8 @@ public class CustomerController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCustomer(@PathVariable Long id) {
         try {
-            Customer deleted = customerService.deleteCustomer(id);
-            return ResponseEntity.ok(deleted);
+           customerService.deleteCustomer(id);
+            return ResponseEntity.ok("Cliente eliminado correctamente");
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }

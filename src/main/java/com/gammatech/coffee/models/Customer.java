@@ -10,16 +10,21 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "customer")
 public class Customer {
+    
     @Id
     @GeneratedValue(strategy= GenerationType.AUTO)
     private Long id;
 
-
     private String name;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String email;
+
     private String phone;
+    
+    //constructor vacio
+    public Customer() {
+    }
 
     public Customer(Long id, String name, String email, String phone) {
         this.id = id;
