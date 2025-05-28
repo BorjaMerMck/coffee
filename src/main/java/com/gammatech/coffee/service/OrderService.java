@@ -154,6 +154,12 @@ public class OrderService {
         }
     }
 
+    public Order updateOrderStatus(Long id, OrderStatus status) {
+        Order order = getOrderById(id);
+        order.setOrderStatus(status);
+        return orderRepository.save(order);
+    }
+
     private double calculateTotal(List<Coffee> items) {
         return items.stream()
                     .mapToDouble(item -> coffeeRepository.getById(item.getId()).getPrice())

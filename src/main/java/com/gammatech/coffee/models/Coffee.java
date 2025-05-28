@@ -1,7 +1,10 @@
 package com.gammatech.coffee.models;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
-
+@Entity
+@Table(name = "coffees")
 public class Coffee {
     private Long id;
     private String name;
