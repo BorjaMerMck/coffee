@@ -25,8 +25,7 @@ public class Coffee {
     public Coffee() {
     }
 
-    public Coffee(Long id, String name, Double price, String imageUrl) {
-        this.id = id;
+    public Coffee(String name, Double price, String imageUrl) {
         this.name = name;
         this.price = price;
         this.imageUrl = imageUrl;

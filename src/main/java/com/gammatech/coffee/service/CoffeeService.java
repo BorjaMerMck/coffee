@@ -1,15 +1,14 @@
 package com.gammatech.coffee.service;
-
 import com.gammatech.coffee.repository.CoffeeRepository;
 import com.gammatech.coffee.exceptions.ResourceAlreadyExistsException;
 import com.gammatech.coffee.exceptions.ResourceNotFoundException;
 import com.gammatech.coffee.models.Coffee;
 import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CoffeeService {
@@ -36,7 +35,8 @@ public class CoffeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Cafe  con el id '" + coffeeId + "' no encontrado"));
 
     }
-
+    
+    @Transactional
     public Coffee createCoffee(Coffee coffeeRequest) {
         // campo unico
         if (coffeeRepository.existsByName(coffeeRequest.getName())) {
@@ -46,6 +46,7 @@ public class CoffeeService {
         return coffeeRepository.save(coffeeRequest);
     }
 
+    @Transactional
     public Coffee updateCoffee(Long coffeeId, Coffee coffeeRequest) {
         Coffee existingCoffee = coffeeRepository.findById(coffeeId)
             .orElseThrow(() -> new ResourceNotFoundException("No se encontró el café con ID: " + coffeeId));
@@ -62,6 +63,7 @@ public class CoffeeService {
         return coffeeRepository.save(existingCoffee);
     }
 
+    @Transactional
     public Coffee updateCoffeeImageUrl(Long coffeeId, String imageUrl) {
         // Verificar si existe el café
         Coffee existingCoffee = coffeeRepository.findById(coffeeId)
@@ -76,6 +78,7 @@ public class CoffeeService {
         return coffeeRepository.save(existingCoffee);
     }
 
+    @Transactional
     public void deleteCoffee(Long coffeeId) {
         Coffee deleteCoffee = coffeeRepository.findById(coffeeId)
             .orElseThrow(() -> new ResourceNotFoundException("No se encontró el café con ID: " + coffeeId));

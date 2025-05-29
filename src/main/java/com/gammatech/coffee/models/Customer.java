@@ -26,8 +26,7 @@ public class Customer {
     public Customer() {
     }
 
-    public Customer(Long id, String name, String email, String phone) {
-        this.id = id;
+    public Customer(String name, String email, String phone) {
         this.name = name;
         this.email = email;
         this.phone = phone;

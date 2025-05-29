@@ -1,25 +1,28 @@
 package com.gammatech.coffee.service;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.gammatech.coffee.exceptions.CoffeeOrderDuplicatedException;
-import com.gammatech.coffee.exceptions.ResourceAlreadyExistsException;
 import com.gammatech.coffee.exceptions.ResourceNotFoundException;
 import com.gammatech.coffee.models.Coffee;
 import com.gammatech.coffee.models.Customer;
 import com.gammatech.coffee.models.Order;
+import com.gammatech.coffee.models.OrderItem;
 import com.gammatech.coffee.models.OrderStatus;
 import com.gammatech.coffee.repository.CoffeeRepository;
 import com.gammatech.coffee.repository.CustomerRepository;
 import com.gammatech.coffee.repository.OrderRepository;
 
+
+
 @Service
 public class OrderService {
+    
     private final OrderRepository orderRepository;
     private final CoffeeRepository coffeeRepository;
     private final CustomerRepository customerRepository;
@@ -32,138 +35,150 @@ public class OrderService {
     }
 
     public List<Order> getAllOrders() {
-        return orderRepository.getAll();
+        return orderRepository.findAll();
     }
 
-    public Order getOrderById(Long id) {
-        Order order = orderRepository.getById(id);
-        if (order == null) {
-            throw new ResourceNotFoundException("No se encontró el pedido con ID: " + id);
-        }
-        return order;
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Pedido  con el id '" + orderId + "' no encontrado"));
     }
 
+    @Transactional
     public Order createOrder(Order orderRequest) {
-
-  /*
-         * {
-         * "id": 1,
-         * "customer": {
-         * "id": 1
-         * },
-         * "coffees": [
-         * {
-         * "id": 1,
-         * },
-         * {
-         * "id": 2,
-         * }
-         * ]
-         */
-
-         // Validacion del orderRequest
-        if (orderRequest.getId() == null) {
-            throw new IllegalArgumentException("El ID del pedido no puede ser nulo");
+        Customer customer = validateCustomer(orderRequest.getCustomer());
+    
+        Order order = new Order(); // Primero creamos la orden
+        order.setCustomer(customer);
+        order.setDateOrder(LocalDateTime.now());
+        order.setOrderStatus(OrderStatus.PENDING);
+    
+        List<OrderItem> orderItems = new ArrayList<>();
+        Set<Long> coffeeIds = new HashSet<>();
+    
+        for (OrderItem item : orderRequest.getItems()) {
+            OrderItem newItem = validateItem(item, coffeeIds,order);
+            orderItems.add(newItem);
         }
     
-        if (orderRepository.existsById(orderRequest.getId())) {
-            throw new ResourceAlreadyExistsException("Ya existe un pedido con el ID: " + orderRequest.getId());
-        }
-
-        // Validacion del customer y los cafes
-        validateCustomer(orderRequest.getCustomer());
-        validateCoffees(orderRequest.getItems());
-
-    
-        orderRequest.setTotalPrice(calculateTotal(orderRequest.getItems()));
-        orderRequest.setOrderDate(LocalDateTime.now());
-        orderRequest.setOrderStatus(OrderStatus.PENDIENTE);
-    
-        return orderRepository.save(orderRequest);
+        order.setItems(orderItems);
+        order.setTotal(order.calculateTotal());
+        return orderRepository.save(order);
+      
     }
+   
 
+    @Transactional
     public Order updateOrder(Long id, Order orderRequest) {
-        Order existingOrder = orderRepository.getById(id);
-        if (existingOrder == null) {
-            throw new ResourceNotFoundException("El pedido con ID: " + id + " no existe");
+        Order existingOrder = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("El pedido con ID: " + id + " no existe"));
+
+        if (existingOrder.getOrderStatus() != OrderStatus.PENDING) {
+            throw new IllegalStateException("Solo se pueden modificar pedidos en estado PENDING");
         }
     
-        // Validacion del orderRequest
-        if (orderRequest.getId() == null) {
-            throw new IllegalArgumentException("El ID del pedido no puede ser nulo");
+        Customer customer = validateCustomer(orderRequest.getCustomer());
+        existingOrder.setCustomer(customer);
+    
+        // Limpiar la lista anterior
+        existingOrder.getItems().clear();
+    
+        // Añadir los nuevos items, validándolos de nuevo si hace falta
+        for (OrderItem item : orderRequest.getItems()) {
+            OrderItem newItem = validateItem(item, new HashSet<>(), existingOrder);
+            existingOrder.getItems().add(newItem);
         }
     
-        if (!orderRequest.getId().equals(id)) {
-            throw new IllegalArgumentException("El ID del pedido no puede cambiarse. Se esperaba: " + id);
+        existingOrder.setTotal(existingOrder.calculateTotal());
+        return orderRepository.save(existingOrder);
+    }
+    
+
+    @Transactional
+    public Order updateOrderStatus(Long id, OrderStatus status) {
+        // Validar que existe el order id
+        Order existingOrder = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("El pedido con ID: " + id + " no existe"));
+        if (status == null) {
+            throw new IllegalArgumentException("El estado del pedido no puede ser nulo");
         }
-    
-        validateCustomer(orderRequest.getCustomer());
-    
-        if (!existingOrder.getCustomer().getId().equals(orderRequest.getCustomer().getId())) {
-            throw new ResourceAlreadyExistsException("No se puede cambiar el cliente del pedido con ID: " + id);
-        }
-    
-        validateCoffees(orderRequest.getItems());
-    
-        orderRequest.setId(id);
-        orderRequest.setTotalPrice(calculateTotal(orderRequest.getItems()));
-        orderRequest.setOrderDate(LocalDateTime.now());
-        orderRequest.setOrderStatus(existingOrder.getOrderStatus());
-    
-        return orderRepository.save(orderRequest);
+        existingOrder.setOrderStatus(status);
+        return orderRepository.save(existingOrder);
     }
 
-    public Order deleteOrder(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteOrder'");
+    @Transactional
+    public void deleteOrder(Long id) {
+        Order existingOrder = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("El pedido con ID: " + id + " no existe"));
+        orderRepository.delete(existingOrder);
     }
 
+    public List<Order> getOrdersByStatus(OrderStatus status) {
+        if (status == null) {
+            throw new IllegalArgumentException("El estado del pedido no puede ser nulo");
+        }
+        return orderRepository.findByOrderStatus(status);
+    }
 
+    public List<Order> getOrdersByCustomer(Long customerId) {
+        // Verificar que el cliente existe
+        customerRepository.findById(customerId)
+            .orElseThrow(() -> new ResourceNotFoundException("No existe el cliente con ID: " + customerId));
+        return orderRepository.findAllByCustomerId(customerId);
+    }
 
     // METODOS
-    private void validateCustomer(Customer customer) {
+
+    private OrderItem validateItem(OrderItem item, Set<Long> coffeeIds, Order order) {
+        // que items tiene el orderitem
+        // 1. coffee
+        // 2. quantity
+
+        Coffee coffee = validateCoffee(item.getCoffee());
+        int quantity = validateQuantity(item.getQuantity());
+    
+        // validacion de que el cafe no se encuentre ya en el Set<Long> coffeeIds
+        if (!coffeeIds.add(coffee.getId())) {
+            throw new CoffeeOrderDuplicatedException("No se permiten cafes duplicados");
+        }
+    
+        OrderItem newItem = new OrderItem();
+        newItem.setCoffee(coffee);
+        newItem.setQuantity(quantity);
+        newItem.setOrder(order);
+        newItem.setSubtotal(coffee.getPrice() * quantity);
+        return newItem;
+    }
+
+    private Customer validateCustomer(Customer customer) {
         if (customer == null || customer.getId() == null) {
             throw new IllegalArgumentException("El cliente del pedido es obligatorio");
         }
     
-        if (!customerRepository.existsById(customer.getId())) {
-            throw new ResourceNotFoundException("No existe el cliente con ID: " + customer.getId());
-        }
+        // Devolvemos el cliente completo desde la base de datos
+        return customerRepository.findById(customer.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("No existe el cliente con ID: " + customer.getId()));
     }
 
-
-
-    private void validateCoffees(List<Coffee> items) {
-        if (items == null || items.isEmpty()) {
-            throw new IllegalArgumentException("El pedido debe contener al menos un café");
+    
+    private Coffee validateCoffee(Coffee coffee) {
+        // validamos que el coffee no sea nulo o sin id
+        if (coffee == null || coffee.getId() == null) {
+            throw new IllegalArgumentException("Debe haber al menos un café");
         }
     
-        Set<Long> uniqueCoffeeIds = new HashSet<>();
-        for (Coffee item : items) {
-            if (item == null || item.getId() == null) {
-                throw new IllegalArgumentException("Los cafés no pueden ser nulos o sin ID");
-            }
+        // Devolvemos el café completo desde la base de datos
+        return coffeeRepository.findById(coffee.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("No existe café con ID: " + coffee.getId()));
+    }
     
-            if (!coffeeRepository.existsById(item.getId())) {
-                throw new ResourceNotFoundException("No se encontró el café con ID: " + item.getId());
-            }
-    
-            if (!uniqueCoffeeIds.add(item.getId())) {
-                throw new CoffeeOrderDuplicatedException("El pedido contiene cafés duplicados con ID: " + item.getId());
-            }
+
+    private int validateQuantity(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("La cantidad debe ser mayor que cero");
         }
+        return quantity;
     }
 
-    public Order updateOrderStatus(Long id, OrderStatus status) {
-        Order order = getOrderById(id);
-        order.setOrderStatus(status);
-        return orderRepository.save(order);
-    }
-
-    private double calculateTotal(List<Coffee> items) {
-        return items.stream()
-                    .mapToDouble(item -> coffeeRepository.getById(item.getId()).getPrice())
-                    .sum();
-    }
+ 
 
 }

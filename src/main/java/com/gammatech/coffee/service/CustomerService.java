@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.gammatech.coffee.models.Coffee;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.gammatech.coffee.exceptions.ResourceAlreadyExistsException;
 import com.gammatech.coffee.exceptions.ResourceNotFoundException;
@@ -35,7 +36,8 @@ public class CustomerService {
         return customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente  con el id '" + customerId + "' no encontrado"));
     }
-
+    
+    @Transactional
     public Customer createCustomer(Customer customerRequest) {
         if (customerRepository.existsByEmail(customerRequest.getEmail())) {
             throw new ResourceAlreadyExistsException("Ya existe un cliente con el email: " + customerRequest.getEmail());
@@ -44,6 +46,7 @@ public class CustomerService {
         return customerRepository.save(customerRequest);
     }
 
+    @Transactional
     public Customer updateCustomer(Long customerId, Customer customerRequest) {
         Customer existingCustomer= customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el cliente con ID: " + customerId));
@@ -59,6 +62,7 @@ public class CustomerService {
         return customerRepository.save(existingCustomer);
     }
 
+    @Transactional
     public Customer updateCustomerEmail(Long customerId, String email) {
          // Verificar si existe el café
          Customer existingCustomer = customerRepository.findById(customerId)
@@ -77,6 +81,7 @@ public class CustomerService {
          return customerRepository.save(existingCustomer);
     }
 
+    @Transactional
     public void deleteCustomer(Long customerId) {
         Customer deleteCustomer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el cliente con ID: " + customerId));

@@ -1,42 +1,13 @@
 package com.gammatech.coffee.repository;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
 import com.gammatech.coffee.models.Order;
+import com.gammatech.coffee.models.OrderStatus;
 
 @Repository
-public class OrderRepository {
-    private final Map<Long, Order> orders = new HashMap<>();
-    
-    // clave: id, valor: order
-
-    public Order save(Order order) {
-        orders.put(order.getId(), order);
-        return orders.get(order.getId());
-    }
-
-    public Order getById(Long orderId) {
-        return orders.get(orderId);
-    }
-
-    public List<Order> getAll() {
-        return List.copyOf(orders.values());
-    }
-
-    public boolean existsById(Long orderId) {
-        return orders.containsKey(orderId);
-    }
-
-    public Order delete(Long orderId) {
-        return orders.remove(orderId);
-    }
-
-    public boolean existsByCustomerId(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'existsByCustomerId'");
-    }
+public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findByOrderStatus(OrderStatus status);
+    List<Order> findAllByCustomerId(Long customerId);
 }
