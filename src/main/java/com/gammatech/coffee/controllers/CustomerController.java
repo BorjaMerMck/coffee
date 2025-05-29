@@ -21,6 +21,10 @@ import com.gammatech.coffee.models.Customer;
 import com.gammatech.coffee.responses.CustomerPageResponse;
 import com.gammatech.coffee.service.CustomerService;
 
+/**
+ * Controlador REST que maneja las operaciones CRUD para la entidad Customer.
+ * Proporciona endpoints para gestionar clientes en el sistema.
+ */
 @RestController
 @RequestMapping("/api/customers")
 @CrossOrigin(origins = "*")
@@ -28,10 +32,18 @@ public class CustomerController {
 
     private final CustomerService customerService;
 
+    /**
+     * Constructor que inyecta el servicio de cliente.
+     * @param customerService Servicio que maneja la lógica de negocio de los clientes
+     */
     public CustomerController(CustomerService customerService) {
         this.customerService = customerService;
     }
 
+    /**
+     * Obtiene todos los clientes disponibles.
+     * @return ResponseEntity con la lista de clientes o sin contenido si no hay clientes
+     */
     @GetMapping("/all")
     public ResponseEntity<?> getAllCustomers() {
         List<Customer> customers = customerService.getAllCustomers();
@@ -41,6 +53,12 @@ public class CustomerController {
         return ResponseEntity.ok(customers);
     }
 
+    /**
+     * Obtiene una página de clientes.
+     * @param page número de página (por defecto 0)
+     * @param size tamaño de la página (por defecto 2)
+     * @return ResponseEntity con la respuesta paginada de clientes
+     */
     @GetMapping()
     public ResponseEntity<?> getCustomers(
             @RequestParam(defaultValue = "0") int page,
@@ -54,6 +72,11 @@ public class CustomerController {
         return ResponseEntity.status(HttpStatus.OK).body(customerPageResponse);
     }
 
+    /**
+     * Obtiene un cliente por su ID.
+     * @param id Identificador único del cliente
+     * @return ResponseEntity con el cliente encontrado o mensaje de error si no existe
+     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getCustomerById(@PathVariable Long id) {
         try {
@@ -64,6 +87,11 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Crea un nuevo cliente en el sistema.
+     * @param customerRequest Datos del cliente a crear
+     * @return ResponseEntity con el cliente creado o mensaje de error si hay problemas
+     */
     @PostMapping
     public ResponseEntity<?> createCustomer(@RequestBody Customer customerRequest) {
         try {
@@ -76,6 +104,12 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Actualiza todos los datos de un cliente existente.
+     * @param id Identificador único del cliente a actualizar
+     * @param customerRequest Nuevos datos del cliente
+     * @return ResponseEntity con el cliente actualizado o mensaje de error si hay problemas
+     */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCustomer(@PathVariable Long id, @RequestBody Customer customerRequest) {
         try {
@@ -90,6 +124,12 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Actualiza solo el email de un cliente existente.
+     * @param id Identificador único del cliente
+     * @param email Nuevo email del cliente
+     * @return ResponseEntity con el cliente actualizado o mensaje de error si hay problemas
+     */
     @PatchMapping("/{id}")
     public ResponseEntity<?> updateCustomerPatch(@PathVariable Long id, @RequestParam String email) {
         try {
@@ -104,6 +144,11 @@ public class CustomerController {
         }
     }
 
+    /**
+     * Elimina un cliente del sistema.
+     * @param id Identificador único del cliente a eliminar
+     * @return ResponseEntity con mensaje de éxito o error si el cliente no existe
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteCustomer(@PathVariable Long id) {
         try {
