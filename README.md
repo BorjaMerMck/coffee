@@ -201,7 +201,7 @@ POST /api/orders
 
 ## Autor ✒️
 
-* **Sandra Amorós Reyes**  &&  Borja Merchan Mckenna
+ Borja Merchan Mckenna
 
 Proyecto desarrollado como Trabajo Final del Bootcamp de Desarrollo Backend en GammaTech School
 
