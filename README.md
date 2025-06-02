@@ -136,7 +136,7 @@ coffee-shop-api/
 
 1. Clonar el repositorio:
 ```bash
-git clone https://github.com/BorjaMerMck/coffee>
+git clone https://github.com/BorjaMerMck/coffee
 ```
 
 2. Configurar la base de datos en `application.properties`:
@@ -199,9 +199,9 @@ POST /api/orders
 - No permite cafés duplicados
 - Cantidades positivas
 
-## Autor ✒️
-
- Borja Merchan Mckenna
+## Autores ✒️
+- [Sandra Amore](https://github.com/sandraamore95)
+- [Borja Merchan Mckenna](https://github.com/BorjaMerMck)
 
 Proyecto desarrollado como Trabajo Final del Bootcamp de Desarrollo Backend en GammaTech School
 
